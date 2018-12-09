@@ -1,9 +1,10 @@
 from setuptools import setup
 
+
 setup(
     name='snapshot-analyzer',
     version='0.1',
-    packages=[''],
+    packages=['shotty'],
     url='https://github.com/pradeepnprasad/shotty',
     license='GPLv3+',
     author='pradeepnprasad',
