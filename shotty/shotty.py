@@ -8,7 +8,6 @@ session = boto3.session.Session(profile_name='cb-playground-nonprod', region_nam
 ec2 = session.resource('ec2')
 
 
-
 def filter_instances(project):
     "stop ec2 instances"
 
@@ -22,6 +21,10 @@ def filter_instances(project):
         print("This is from the else section")
 
     return instances
+
+def has_pending_snapshots(volume):
+    snapshots = list(volumes.snapshots.all())
+    return snapshots and snapshots[0].state == 'pending'
 
 
 @click.group()
@@ -69,7 +72,6 @@ def volumes():
 @volumes.command('list')
 @click.option('--project', default=None,
               help="Only volumes for project (tag Project:<name>)")
-
 def list_volumes(project):
     "List EC2 volumes"
     instances = filter_instances(project)
@@ -86,6 +88,7 @@ def list_volumes(project):
 
     return
 
+
 @cli.group('instances')
 def instances():
     """command for instances"""
@@ -95,7 +98,6 @@ def instances():
                    help="Create snapshots of all volumes")
 @click.option('--project', default=None,
               help="Only instances for project (tag Project:<name>)")
-
 def create_snapshots(project):
     "Create snapshots for EC2 instances"
     instances = filter_instances(project)
@@ -104,6 +106,9 @@ def create_snapshots(project):
         i.stop()
         i.wait_until_stopped()
         for v in i.volumes.all():
+            if has_pending_snapshots(v):
+                print(" Skipping {0}, snapshot already in progress".format(v.id))
+                continue
             print("Creating snapshot of {0}".format(v.id))
             v.create_snapshot(Description="Created by SnapshotAnalyzer 30000")
         print("Starting {0}...".format(i.id))
@@ -114,11 +119,9 @@ def create_snapshots(project):
     return
 
 
-
 @instances.command('list')
 @click.option('--project', default=None,
               help="Only instances for project (tag Project:<name>)")
-
 def list_instances(project):
     "List EC2 instances"
     instances = filter_instances(project)
@@ -135,15 +138,14 @@ def list_instances(project):
 
     return
 
+
 @instances.command('stop')
 @click.option('--project', default=None,
               help='Only instances for project')
-
 def stop_instances(project):
     "stop ec2 instances"
 
     instances = filter_instances(project)
-
 
     for i in instances:
         print("Stopping {0}".format(i.id))
@@ -155,10 +157,10 @@ def stop_instances(project):
 
     return
 
+
 @instances.command('start')
 @click.option('--project', default=None,
               help='Only instances for project')
-
 def start_instances(project):
     "start ec2 instances"
 
@@ -174,20 +176,7 @@ def start_instances(project):
 
     return
 
+
 if __name__ == '__main__':
+
     cli()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
